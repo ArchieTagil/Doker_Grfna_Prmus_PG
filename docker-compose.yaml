@@ -1,0 +1,77 @@
+services:
+  prometheus:
+    image: ubuntu/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    networks:
+      - docker-net
+    volumes:
+      - ./prometheus:/etc/prometheus
+    depends_on: 
+      - node-exporter
+      - postgres
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+      #environment:
+      #- GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      #- GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      #      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - 3000:3000
+    networks:
+      - docker-net
+    depends_on:
+      - prometheus
+    volumes:
+      - ./grafana:/etc/grafana/provisioning
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    ports: 
+      - 9100:9100
+    networks:
+      - docker-net
+
+  postgres-exporter:
+    image: bitnami/postgres-exporter
+    container_name: postgres-exporter
+    ports:
+      - 9187:9187
+    networks:
+      - docker-net
+    depends_on:
+      - postgres
+    environment:
+      - DATA_SOURCE_URI=postgres:5432/greybaca?sslmode=disable
+      - DATA_SOURCE_USER=greybaca
+      - DATA_SOURCE_PASS=123456
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_DB: "greybaca"
+      POSTGRES_USER: "greybaca"
+      POSTGRES_PASSWORD: "123456"
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "pg_stat_statements.track=all"
+    volumes:
+      - ./postgres_init/:/docker-entrypoint-initdb.d/
+    networks:
+      - docker-net
+    ports:
+      - 5432:5432
+
+networks:
+  docker-net:
+    name: docker-net
