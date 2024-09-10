@@ -15,17 +15,15 @@ services:
   grafana:
     image: grafana/grafana
     container_name: grafana
-      #environment:
-      #- GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      #- GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-      #      - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - 3000:3000
     networks:
       - docker-net
     depends_on:
       - prometheus
+      - influxdb
     volumes:
+      #- ./grafana_data:/var/lib/grafana
       - ./grafana:/etc/grafana/provisioning
 
   node-exporter:
@@ -36,8 +34,29 @@ services:
     networks:
       - docker-net
 
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    environment:
+      - INFLUX_DB=db0
+      - INFLUX_ADMIN_USER=admin
+      - INFLUX_ADMIN_PASSWORD=admin
+      #- DOCKER_INFLUXDB_INIT_MODE=setup
+      #- DOCKER_INFLUXDB_INIT_USERNAME=admin
+      #- DOCKER_INFLUXDB_INIT_PASSWORD=admin
+      #- DOCKER_INFLUXDB_INIT_ORG=BellIntegrator
+      #- DOCKER_INFLUXDB_INIT_BUCKET=tmpbucket
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2
+      - ./influxdb/config:/etc/influxdb2
+    ports:
+      - 8086:8086
+    networks:
+      - docker-net
+
   postgres-exporter:
-    image: bitnami/postgres-exporter
+    #image: bitnami/postgres-exporter
+    image: wrouesnel/postgres_exporter
     container_name: postgres-exporter
     ports:
       - 9187:9187
